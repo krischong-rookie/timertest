@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f3ec">
+  <title>此刻专注</title>
+  <style>
+    :root { color-scheme: light; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100svh; display: grid; place-items: center; padding: 24px; background: #f6f3ec; color: #21322d; }
+    main { width: min(100%, 480px); padding: clamp(28px, 8vw, 48px); border: 1px solid #e6e3d9; border-radius: 28px; background: #fffdf8; box-shadow: 0 20px 60px #21322d12; text-align: center; }
+    .eyebrow { margin: 0 0 24px; color: #587666; font-size: 13px; font-weight: 700; letter-spacing: .15em; }
+    .brand { min-height: 0; padding: 6px 10px; background: transparent; color: #587666; cursor: pointer; }
+    .brand:hover, .timer:hover { background: #f5f7f0; }
+    .edit-mark { margin-left: 4px; font-size: 12px; opacity: .65; }
+    h1 { margin: 0; font-size: clamp(28px, 7vw, 36px); letter-spacing: -.04em; }
+    .description { min-height: 3em; margin: 14px 0 28px; color: #62716b; line-height: 1.5; }
+    .timer { display: block; width: 100%; min-height: 0; margin: 0 0 30px; padding: 5px 0; background: transparent; color: inherit; font-size: clamp(74px, 19vw, 108px); font-weight: 750; font-variant-numeric: tabular-nums; letter-spacing: -.07em; line-height: 1; }
+    .actions { display: grid; gap: 10px; }
+    button { min-height: 52px; border: 0; border-radius: 14px; font: inherit; font-weight: 700; cursor: pointer; }
+    button:focus-visible { outline: 3px solid #96b9a4; outline-offset: 3px; }
+    .primary { background: #27684b; color: white; }
+    .primary:hover { background: #1f563e; }
+    .secondary { background: #f0f2eb; color: #41584c; }
+    .secondary:hover { background: #e5eadf; }
+    [hidden] { display: none !important; }
+    .footnote { margin: 28px 0 0; color: #78847e; font-size: 13px; }
+    dialog { width: min(92vw, 380px); padding: 28px; border: 1px solid #e6e3d9; border-radius: 20px; background: #fffdf8; color: #21322d; box-shadow: 0 20px 60px #21322d30; text-align: center; }
+    dialog::backdrop { background: #21322d70; }
+    dialog h2 { margin: 0 0 8px; font-size: 22px; }
+    dialog p { margin: 0 0 22px; color: #62716b; line-height: 1.5; }
+    label { display: block; margin: 14px 0 6px; font-size: 14px; font-weight: 700; text-align: center; }
+    input { width: 100%; min-height: 46px; padding: 8px 12px; border: 1px solid #b9c7bd; border-radius: 10px; background: #fff; color: #21322d; font: inherit; text-align: center; }
+    input:focus-visible { outline: 3px solid #96b9a4; outline-offset: 2px; }
+    .dialog-actions { display: flex; gap: 10px; margin-top: 24px; }
+    .dialog-actions button { flex: 1; }
+    #completion-close { display: block; min-width: 120px; margin: 0 auto; padding: 0 20px; }
+    .notification-button { min-height: 0; margin-top: 12px; padding: 6px 10px; background: transparent; color: #27684b; font-size: 13px; text-decoration: underline; }
+    .notification-button:hover { color: #1f563e; }
+    .notification-button:disabled { cursor: default; text-decoration: none; }
+    .notification-status { margin: 4px 0 0; color: #78847e; font-size: 12px; line-height: 1.4; }
+  </style>
+</head>
+<body>
+  <main>
+    <button id="brand" class="eyebrow brand" type="button" aria-label="更改顶部名称">此刻专注 <span class="edit-mark" aria-hidden="true">✎</span></button>
+    <h1 id="heading">先给自己 15 分钟</h1>
+    <p id="description" class="description" aria-live="polite">按下开始，只做眼前这一件事。</p>
+    <button id="timer" class="timer" type="button" aria-label="更改专注和休息时长">15:00</button>
+    <div class="actions">
+      <button id="primary" class="primary" type="button">开始专注</button>
+      <button id="secondary" class="secondary" type="button" hidden>结束本轮</button>
+    </div>
+    <p id="footnote" class="footnote">15 分钟专注 · 5 分钟休息</p>
+    <button id="notification-button" class="notification-button" type="button">发送测试通知</button>
+    <p id="notification-status" class="notification-status" aria-live="polite">首次点击时，浏览器会询问是否允许通知。</p>
+  </main>
+  <dialog id="brand-dialog">
+    <form id="brand-form">
+      <h2>更改顶部名称</h2>
+      <p>给这个专注页面起一个你喜欢的名字。</p>
+      <label for="brand-input">名称</label>
+      <input id="brand-input" type="text" maxlength="24" required>
+      <div class="dialog-actions">
+        <button class="secondary" type="button" data-close="brand-dialog">取消</button>
+        <button class="primary" type="submit">保存</button>
+      </div>
+    </form>
+  </dialog>
+  <dialog id="time-dialog">
+    <form id="time-form">
+      <h2>更改时长</h2>
+      <p>保存后本轮会回到开始状态。</p>
+      <label for="focus-input">专注时间（分钟）</label>
+      <input id="focus-input" type="number" min="0" max="180" step="any" inputmode="decimal" required>
+      <label for="break-input">休息时间（分钟）</label>
+      <input id="break-input" type="number" min="0" max="60" step="any" inputmode="decimal" required>
+      <div class="dialog-actions">
+        <button class="secondary" type="button" data-close="time-dialog">取消</button>
+        <button class="primary" type="submit">保存</button>
+      </div>
+    </form>
+  </dialog>
+  <dialog id="completion-dialog" aria-labelledby="completion-heading">
+    <h2 id="completion-heading">倒数结束</h2>
+    <p id="completion-message"></p>
+    <p id="completion-notification-status" class="notification-status" hidden></p>
+    <button id="completion-close" class="primary" type="button">知道了</button>
+  </dialog>
+  <script>
+    const SETTINGS_KEY = 'focus-timer-settings';
+    const defaults = { name: '此刻专注', focusMinutes: 15, breakMinutes: 5 };
+    const toSeconds = minutes => Math.round(minutes * 60);
+    const validFocus = value => Number.isFinite(value) && value > 0 && value <= 180 && toSeconds(value) >= 1;
+    const validBreak = value => Number.isFinite(value) && value >= 0 && value <= 60;
+    function loadSettings() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+        return {
+          name: typeof saved.name === 'string' && saved.name.trim() ? saved.name.trim().slice(0, 24) : defaults.name,
+          focusMinutes: validFocus(saved.focusMinutes) ? saved.focusMinutes : defaults.focusMinutes,
+          breakMinutes: validBreak(saved.breakMinutes) ? saved.breakMinutes : defaults.breakMinutes
+        };
+      } catch { return { ...defaults }; }
+    }
+    const settings = loadSettings();
+    function saveSettings() {
+      try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch { /* Local files may block storage. */ }
+    }
+    const brand = document.querySelector('#brand');
+    const brandDialog = document.querySelector('#brand-dialog');
+    const brandForm = document.querySelector('#brand-form');
+    const brandInput = document.querySelector('#brand-input');
+    const timeDialog = document.querySelector('#time-dialog');
+    const timeForm = document.querySelector('#time-form');
+    const focusInput = document.querySelector('#focus-input');
+    const breakInput = document.querySelector('#break-input');
+    const completionDialog = document.querySelector('#completion-dialog');
+    const completionHeading = document.querySelector('#completion-heading');
+    const completionMessage = document.querySelector('#completion-message');
+    const completionNotificationStatus = document.querySelector('#completion-notification-status');
+    const completionClose = document.querySelector('#completion-close');
+    const notificationButton = document.querySelector('#notification-button');
+    const notificationStatus = document.querySelector('#notification-status');
+    const footnote = document.querySelector('#footnote');
+    const heading = document.querySelector('#heading');
+    const description = document.querySelector('#description');
+    const timer = document.querySelector('#timer');
+    const primary = document.querySelector('#primary');
+    const secondary = document.querySelector('#secondary');
+
+    let phase = 'ready';
+    let remaining = toSeconds(settings.focusMinutes) * 1000;
+    let endAt = 0;
+    let running = false;
+    let resumeOnEditorClose = false;
+    let notificationRegistration = null;
+
+    async function registerNotificationWorker() {
+      if (!('serviceWorker' in navigator) || !window.isSecureContext || location.protocol === 'file:') return null;
+      try {
+        await navigator.serviceWorker.register('./focus-timer-sw.js');
+        notificationRegistration = await navigator.serviceWorker.ready;
+      } catch { notificationRegistration = null; }
+      return notificationRegistration;
+    }
+
+    function updateNotificationStatus() {
+      notificationButton.hidden = false;
+      notificationButton.disabled = false;
+      notificationButton.textContent = '发送测试通知';
+      if (!('Notification' in window)) {
+        notificationStatus.textContent = '当前浏览器不支持系统通知。点击按钮可查看说明。';
+      } else if (Notification.permission === 'granted') {
+        notificationStatus.textContent = location.protocol === 'file:'
+          ? '通知权限已允许，但本地文件可能被浏览器静默拦截；请用 HTTPS 版本测试。'
+          : '通知已允许。可点按钮确认浏览器和系统会显示通知。';
+      } else if (Notification.permission === 'denied') {
+        notificationStatus.textContent = location.protocol === 'file:'
+          ? '浏览器已阻止本地文件通知。点击按钮可查看说明。'
+          : '浏览器已阻止通知。点击按钮可查看说明。';
+      } else {
+        notificationStatus.textContent = '首次点击时，浏览器会询问是否允许通知。';
+      }
+    }
+
+    function showNotificationFailure() {
+      notificationStatus.textContent = location.protocol === 'file:'
+        ? '本地文件未能发出通知。请将网页发布到 HTTPS 网站后再试。'
+        : '浏览器未能发出通知。请检查网站和系统的通知设置。';
+      if (completionDialog.open) {
+        completionNotificationStatus.textContent = notificationStatus.textContent;
+        completionNotificationStatus.hidden = false;
+      }
+    }
+
+    function requestNotificationPermission() {
+      return new Promise((resolve, reject) => {
+        let settled = false;
+        const onFocus = () => {
+          if (Notification.permission !== 'default') finish(Notification.permission);
+        };
+        window.addEventListener('focus', onFocus);
+        const timeout = window.setTimeout(() => finish(Notification.permission), 30000);
+        const finish = permission => {
+          if (settled) return;
+          settled = true;
+          window.removeEventListener('focus', onFocus);
+          window.clearTimeout(timeout);
+          resolve(permission || Notification.permission);
+        };
+        const fail = error => {
+          if (settled) return;
+          settled = true;
+          window.removeEventListener('focus', onFocus);
+          window.clearTimeout(timeout);
+          reject(error);
+        };
+        try {
+          const result = Notification.requestPermission(finish);
+          if (result && typeof result.then === 'function') result.then(finish, fail);
+          else if (typeof result === 'string') finish(result);
+        } catch (error) {
+          try {
+            const result = Notification.requestPermission();
+            if (result && typeof result.then === 'function') result.then(finish, fail);
+            else fail(error);
+          } catch (retryError) { fail(retryError); }
+        }
+      });
+    }
+
+    async function sendSystemNotification(title, body, tag = 'focus-timer-finished') {
+      if (!('Notification' in window) || Notification.permission !== 'granted') return false;
+      try {
+        const registration = notificationRegistration || await registerNotificationWorker();
+        if (registration) {
+          await registration.showNotification(title, { body, tag });
+        } else {
+          const notice = new Notification(title, { body, tag });
+          notice.onclick = () => { window.focus(); notice.close(); };
+          notice.onerror = showNotificationFailure;
+        }
+        notificationStatus.textContent = location.protocol === 'file:'
+          ? '已尝试发送，但本地文件可能被浏览器静默拦截；请用 HTTPS 版本测试。'
+          : '已向浏览器发送通知。若没看到，请检查系统通知设置或勿扰模式。';
+        return true;
+      } catch {
+        showNotificationFailure();
+        return false;
+      }
+    }
+
+    function formatTime(ms) {
+      const seconds = Math.ceil(ms / 1000);
+      return `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+    }
+
+    function formatDuration(minutes) {
+      const totalSeconds = toSeconds(minutes);
+      const wholeMinutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      if (totalSeconds === 0) return '0 分钟';
+      if (wholeMinutes === 0) return `${seconds} 秒`;
+      return seconds ? `${wholeMinutes} 分 ${seconds} 秒` : `${wholeMinutes} 分钟`;
+    }
+
+    function render() {
+      const views = {
+        ready: [`先给自己 ${formatDuration(settings.focusMinutes)}`, '按下开始，只做眼前这一件事。', '开始专注'],
+        focus: ['正在专注', '现在只做这一件事。', running ? '暂停' : '继续'],
+        focusComplete: ['专注完成', `做得好，休息 ${formatDuration(settings.breakMinutes)} 吧。`, '开始休息'],
+        break: ['正在休息', '起身活动一下，暂时不用想任务。', running ? '暂停' : '继续'],
+        done: ['本轮结束', '休息好了，随时再来一轮。', '再来一轮']
+      };
+      const [title, hint, action] = views[phase];
+      if (brand.firstChild.textContent !== `${settings.name} `) brand.firstChild.textContent = `${settings.name} `;
+      if (heading.textContent !== title) heading.textContent = title;
+      if (description.textContent !== hint) description.textContent = hint;
+      if (primary.textContent !== action) primary.textContent = action;
+      secondary.hidden = phase === 'ready' || phase === 'done';
+      timer.textContent = formatTime(remaining);
+      footnote.textContent = `${formatDuration(settings.focusMinutes)}专注 · ${formatDuration(settings.breakMinutes)}休息`;
+      document.title = `${timer.textContent} · ${settings.name}`;
+    }
+
+    function start(duration) {
+      remaining = duration;
+      endAt = Date.now() + duration;
+      running = true;
+      render();
+    }
+
+    function tick() {
+      if (!running) return;
+      remaining = Math.max(0, endAt - Date.now());
+      if (remaining === 0) {
+        running = false;
+        if (phase === 'focus') {
+          const hasBreak = toSeconds(settings.breakMinutes) > 0;
+          phase = hasBreak ? 'focusComplete' : 'done';
+          completionHeading.textContent = '专注倒数结束';
+          completionMessage.textContent = hasBreak
+            ? `可以开始 ${formatDuration(settings.breakMinutes)}的休息。`
+            : '休息时间设为 0，本轮已完成。';
+        } else {
+          phase = 'done';
+          completionHeading.textContent = '休息倒数结束';
+          completionMessage.textContent = '本轮已完成，随时可以再来一轮。';
+        }
+        render();
+        completionNotificationStatus.hidden = true;
+        completionDialog.showModal();
+        void sendSystemNotification(completionHeading.textContent, completionMessage.textContent);
+        return;
+      }
+      render();
+    }
+
+    primary.addEventListener('click', () => {
+      if (phase === 'ready') { phase = 'focus'; start(toSeconds(settings.focusMinutes) * 1000); return; }
+      if (phase === 'focusComplete') { phase = 'break'; start(toSeconds(settings.breakMinutes) * 1000); return; }
+      if (phase === 'done') { phase = 'focus'; start(toSeconds(settings.focusMinutes) * 1000); return; }
+      if (running) {
+        remaining = Math.max(0, endAt - Date.now());
+        running = false;
+      } else {
+        endAt = Date.now() + remaining;
+        running = true;
+      }
+      render();
+    });
+
+    secondary.addEventListener('click', () => {
+      phase = 'ready';
+      remaining = toSeconds(settings.focusMinutes) * 1000;
+      running = false;
+      render();
+    });
+
+    function openEditor(dialog) {
+      if (running) {
+        remaining = Math.max(0, endAt - Date.now());
+        if (remaining === 0) { tick(); return; }
+        running = false;
+        resumeOnEditorClose = true;
+        render();
+      } else {
+        resumeOnEditorClose = false;
+      }
+      dialog.showModal();
+    }
+    function onEditorClose() {
+      if (!resumeOnEditorClose) return;
+      resumeOnEditorClose = false;
+      endAt = Date.now() + remaining;
+      running = true;
+      render();
+    }
+    brandDialog.addEventListener('close', onEditorClose);
+    timeDialog.addEventListener('close', onEditorClose);
+
+    brand.addEventListener('click', () => {
+      brandInput.value = settings.name;
+      openEditor(brandDialog);
+    });
+    brandForm.addEventListener('submit', event => {
+      event.preventDefault();
+      const value = brandInput.value.trim();
+      if (!value) { brandInput.setCustomValidity('请输入名称'); brandInput.reportValidity(); return; }
+      settings.name = value.slice(0, 24);
+      saveSettings();
+      brandDialog.close();
+      render();
+    });
+    brandInput.addEventListener('input', () => brandInput.setCustomValidity(''));
+
+    timer.addEventListener('click', () => {
+      focusInput.value = settings.focusMinutes;
+      breakInput.value = settings.breakMinutes;
+      openEditor(timeDialog);
+    });
+    timeForm.addEventListener('submit', event => {
+      event.preventDefault();
+      const focus = Number(focusInput.value);
+      const rest = Number(breakInput.value);
+      if (!validFocus(focus)) {
+        focusInput.setCustomValidity('专注时间至少为 1 秒，且不能超过 180 分钟');
+        focusInput.reportValidity();
+        return;
+      }
+      if (!validBreak(rest)) {
+        breakInput.setCustomValidity('休息时间不能为负数，且不能超过 60 分钟');
+        breakInput.reportValidity();
+        return;
+      }
+      settings.focusMinutes = focus;
+      settings.breakMinutes = rest;
+      saveSettings();
+      phase = 'ready';
+      remaining = toSeconds(focus) * 1000;
+      running = false;
+      resumeOnEditorClose = false;
+      timeDialog.close();
+      render();
+    });
+    focusInput.addEventListener('input', () => focusInput.setCustomValidity(''));
+    breakInput.addEventListener('input', () => breakInput.setCustomValidity(''));
+    document.querySelectorAll('[data-close]').forEach(button => {
+      button.addEventListener('click', () => document.getElementById(button.dataset.close).close());
+    });
+    completionClose.addEventListener('click', () => completionDialog.close());
+    notificationButton.addEventListener('click', async () => {
+      try {
+        if (!('Notification' in window)) {
+          notificationStatus.textContent = '此浏览器不支持系统通知；请使用支持通知的浏览器打开 HTTPS 网页。';
+          return;
+        }
+        if (Notification.permission === 'denied') {
+          notificationStatus.textContent = location.protocol === 'file:'
+            ? '浏览器已阻止本地文件通知；发布到 HTTPS 网站后再试。'
+            : '请在浏览器的网站权限设置中允许通知后刷新网页。';
+          return;
+        }
+        if (Notification.permission !== 'granted') {
+          notificationStatus.textContent = '正在请求通知权限…';
+          const permission = await requestNotificationPermission();
+          updateNotificationStatus();
+          if (permission !== 'granted') {
+            notificationStatus.textContent = location.protocol === 'file:'
+              ? '本地文件未获得稳定的通知权限，请改用 HTTPS 版本。'
+              : '浏览器没有允许通知；请检查网站通知权限。';
+            return;
+          }
+        }
+        await sendSystemNotification('测试通知', '如果你看到这条消息，完成通知已准备好。', 'focus-timer-test');
+      } catch {
+        showNotificationFailure();
+      }
+    });
+
+    setInterval(tick, 250);
+    document.addEventListener('visibilitychange', tick);
+    updateNotificationStatus();
+    if ('Notification' in window && Notification.permission === 'granted') void registerNotificationWorker();
+    render();
+  </script>
+</body>
+</html>
